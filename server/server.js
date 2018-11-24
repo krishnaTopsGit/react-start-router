@@ -1,6 +1,8 @@
 var express = require('express');
-const bodyParser = require('body-parser');
 var app = express();
+
+const bodyParser = require('body-parser');
+app.use(bodyParser.json());
 
 var cors = require('cors');
 app.use(cors())
@@ -11,7 +13,6 @@ var url = "mongodb://localhost:27017";
 
 var ObjectId = require('mongodb').ObjectId;
 
-app.use(bodyParser.json());
 
 let dbConnection;
 MongoClient.connect(url, function (err, db) {
@@ -19,15 +20,28 @@ MongoClient.connect(url, function (err, db) {
     dbConnection = db.db("reactCRUD");
 })
 
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
     // dbConnection.collection("users").find({}).toArray((err, result) => {
     //     if (err) throw err;
     //     res.send(result)
     // });
-    dbConnection.collection("characters").find({}).toArray((err, result) => {
-        if (err) throw err;
-        res.send(result)
-    });
+    let pageNumber = parseInt(req.query.pageNumber);
+    let perPage = parseInt(req.query.perPage);
+    console.log(pageNumber,typeof pageNumber,perPage, typeof perPage)
+    let data = dbConnection.collection("characters").find({})
+    .skip( pageNumber > 0 ? ( ( pageNumber - 1 ) * perPage ) : 0 )
+    .limit( perPage );
+    let totalCount = await data.count();
+    console.log('data.count',totalCount)
+        data.toArray((err, result) => {
+            // console.log(result)
+            let resultData = {
+                data: result,
+                totalCount: totalCount
+            }
+            if (err) throw err;
+            res.send(resultData)
+        });
 })
 
 app.post('/add', (req, res) => {

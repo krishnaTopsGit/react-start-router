@@ -3,20 +3,36 @@ import axios from 'axios';
 
 import history from '../history';
 
+import ReactPaginate from 'react-paginate';
+import './style.css'
+
 class List extends Component {
     state = {
-        characters : []
+        characters : [],
+        perPage: 2,
+        pegeNumber: 0,
+        pageCount: 1
     }
-    componentDidMount() {
-        console.log(this.props)
-        axios.get('http://localhost:5000/')
+    getData(pageNumber) {
+        axios.get('http://localhost:5000?pageNumber='+pageNumber+'&perPage='+this.state.perPage)
         .then((response)=> {
             // console.log(response)
             this.setState({
-                characters: response.data
+                characters: response.data.data,
+                pageCount: response.data.totalCount
             })
         })
     }
+    async componentDidMount() {
+        console.log(this.props)
+        await this.getData(this.state.pegeNumber+1);
+    }
+    handlePageClick = (data) => {
+        console.log('inside pagination',data)
+        let selected = data.selected + 1;
+        this.getData(selected);
+    };
+    
     editCharacter = (data) => {
         console.log(data)
         history.push({
@@ -42,6 +58,7 @@ class List extends Component {
           .catch((err)=> {
             console.log(err)
           })
+        this.getData(0)
       }
     render() {
         return (
@@ -54,6 +71,17 @@ class List extends Component {
                         removeCharacter={this.removeCharacter}
                     />
                 </table>
+                <ReactPaginate previousLabel={"previous"}
+                       nextLabel={"next"}
+                       breakLabel={""}
+                       breakClassName={"break-me"}
+                       pageCount={Math.ceil(this.state.pageCount / this.state.perPage)}
+                       marginPagesDisplayed={0}
+                       pageRangeDisplayed={2}
+                       onPageChange={this.handlePageClick}
+                       containerClassName={"pagination"}
+                       subContainerClassName={"pages pagination"}
+                       activeClassName={"active"} />
                 <input 
                     type="button" 
                     value="Add New" 
